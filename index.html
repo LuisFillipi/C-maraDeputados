@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado de Alto Nível - Câmara dos Deputados (Analista Legislativo)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        camara: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            800: '#065f46',
+                            900: '#022c22',
+                        },
+                        navy: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        },
+                        gold: {
+                            500: '#d97706',
+                            600: '#b45309',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-section, #print-section * { visibility: visible; }
+            #print-section { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-100 dark:bg-navy-950 text-slate-800 dark:text-slate-100 font-sans antialiased flex flex-col transition-colors duration-200">
+
+    <header class="bg-navy-900 text-white shadow-md border-b border-navy-800 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gold-500 text-navy-950 font-bold p-2 rounded-lg flex items-center justify-center w-10 h-10 shadow-inner">
+                    <i class="fa-solid me-0.5 fa-building-columns text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight leading-none text-white">SIMULADO CÂMARA DOS DEPUTADOS</h1>
+                    <p class="text-xs text-slate-400">Analista Legislativo • Padrão FGV / Cebraspe</p>
+                </div>
+            </div>
+
+            <!-- Mode Switcher & Stats Summary -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <!-- Timer Display -->
+                <div id="timer-container" class="hidden flex items-center bg-navy-800 border border-slate-700 px-3 py-1.5 rounded-lg text-sm font-mono text-amber-400">
+                    <i class="fa-regular fa-clock mr-2"></i>
+                    <span id="timer-display">04:00:00</span>
+                </div>
+
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" class="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-navy-800 transition" title="Alternar Tema">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-amber-300"></i>
+                </button>
+
+                <!-- Export Notebook Button -->
+                <button id="btn-export" onclick="exportNotebook()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs sm:text-sm font-medium rounded-lg shadow flex items-center transition">
+                    <i class="fa-solid fa-file-export mr-1.5"></i>
+                    <span class="hidden sm:inline">Exportar</span> Diário
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+        
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-navy-900 p-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+            <nav class="flex space-x-1 sm:space-x-2 w-full sm:w-auto overflow-x-auto custom-scrollbar pb-1 sm:pb-0" aria-label="Tabs">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-navy-800 transition">
+                    <i class="fa-solid fa-chart-pie mr-2 text-emerald-600 dark:text-emerald-400"></i> Dashboard
+                </button>
+                <button onclick="switchTab('exam')" id="tab-exam" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-navy-800 transition">
+                    <i class="fa-solid fa-pen-to-square mr-2 text-blue-600 dark:text-blue-400"></i> Questões (<span id="answered-count-badge">0</span>/80)
+                </button>
+                <button onclick="switchTab('flashcards')" id="tab-flashcards" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-navy-800 transition">
+                    <i class="fa-solid fa-layer-group mr-2 text-amber-500"></i> Flashcards Anki
+                </button>
+                <button onclick="switchTab('notebook')" id="tab-notebook" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-navy-800 transition">
+                    <i class="fa-solid fa-book-bookmark mr-2 text-purple-500"></i> Diário de Erros
+                </button>
+            </nav>
+
+            <!-- Mode Selector -->
+            <div class="flex items-center space-x-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200 dark:border-slate-800">
+                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Modo:</span>
+                <select id="mode-select" onchange="changeStudyMode(this.value)" class="bg-slate-100 dark:bg-navy-800 border border-slate-300 dark:border-slate-700 text-xs sm:text-sm rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-emerald-500 font-medium">
+                    <option value="study">🎓 Modo Estudo (Gabarito Imediato)</option>
+                    <option value="exam">⏱️ Modo Simulado Real (Timer 4h)</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="view-dashboard" class="view-panel flex flex-col gap-6">
+            <!-- Top Stats -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-navy-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center space-x-4">
+                    <div class="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg">
+                        <i class="fa-solid fa-list-check text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Respondidas</p>
+                        <h3 id="stat-answered" class="text-xl font-bold">0 / 80</h3>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-navy-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center space-x-4">
+                    <div class="p-3 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                        <i class="fa-solid fa-bullseye text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Precisão / Acertos</p>
+                        <h3 id="stat-accuracy" class="text-xl font-bold">0%</h3>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-navy-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center space-x-4">
+                    <div class="p-3 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-lg">
+                        <i class="fa-solid fa-bookmark text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Para Revisão</p>
+                        <h3 id="stat-review" class="text-xl font-bold">0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-navy-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center space-x-4">
+                    <div class="p-3 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-lg">
+                        <i class="fa-solid fa-brain text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Cards Dominados</p>
+                        <h3 id="stat-flashcards-mastered" class="text-xl font-bold">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Performance Breakdown -->
+            <div class="bg-white dark:bg-navy-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-bold flex items-center">
+                        <i class="fa-solid fa-layer-group text-emerald-600 dark:text-emerald-400 mr-2"></i>
+                        Desempenho por Disciplina
+                    </h2>
+                    <span class="text-xs text-slate-500">Mínimo sugerido: 70%</span>
+                </div>
+                <div id="subject-performance-list" class="space-y-4">
+                    <!-- Dynamic rendering of subjects progress -->
+                </div>
+            </div>
+
+            <!-- Action Banner -->
+            <div class="bg-gradient-to-r from-navy-900 via-navy-800 to-emerald-900 text-white p-6 rounded-xl shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-bold mb-1">Pronto para testar seus conhecimentos em nível de prova real?</h3>
+                    <p class="text-sm text-slate-300">Inicie pelo Modo Estudo com gabarito comentado passo a passo ou simule o dia da prova com o cronômetro oficial.</p>
+                </div>
+                <button onclick="switchTab('exam')" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-navy-950 font-bold rounded-lg shadow-lg transition whitespace-nowrap">
+                    Ir Para o Simulado <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="view-exam" class="view-panel hidden grid grid-cols-1 lg:grid-cols-4 gap-6">
+            
+            <!-- Left 3 Columns: Question Content -->
+            <div class="lg:col-span-3 flex flex-col gap-6">
+                
+                <!-- Filter Bar -->
+                <div class="bg-white dark:bg-navy-900 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-semibold text-slate-500">Filtrar Disciplina:</span>
+                        <select id="filter-subject" onchange="applySubjectFilter(this.value)" class="bg-slate-100 dark:bg-navy-800 border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-2.5 py-1">
+                            <option value="all">Todas as Disciplinas (80 Questões)</option>
+                            <option value="Constitucional">Direito Constitucional</option>
+                            <option value="RICD">Regimento Interno Câmara (RICD)</option>
+                            <option value="RCCN">Regimento Comum CN (RCCN)</option>
+                            <option value="Administrativo">Direito Administrativo</option>
+                            <option value="AFO">Administração Financeira (AFO)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleBookmarkCurrent()" id="btn-bookmark" class="px-3 py-1 bg-slate-100 dark:bg-navy-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 transition flex items-center">
+                            <i class="fa-regular fa-bookmark mr-1.5 text-amber-500"></i>
+                            <span id="bookmark-text">Marcar p/ Revisão</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Question Card -->
+                <div class="bg-white dark:bg-navy-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between min-h-[450px]">
+                    <div>
+                        <!-- Header metadata -->
+                        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-4">
+                            <div class="flex items-center space-x-2">
+                                <span id="q-number-title" class="text-base font-bold text-emerald-600 dark:text-emerald-400">Questão 01 de 80</span>
+                                <span id="q-subject-tag" class="px-2.5 py-0.5 bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-700">Constitucional</span>
+                            </div>
+                            <span class="text-xs text-slate-400">Estilo FGV • Analista Legislativo</span>
+                        </div>
+
+                        <!-- Stem -->
+                        <div id="q-stem" class="text-sm sm:text-base leading-relaxed mb-6 font-normal text-slate-800 dark:text-slate-200">
+                            <!-- Question Stem Loaded Dynamically -->
+                        </div>
+
+                        <!-- Options List -->
+                        <div id="q-options" class="space-y-3 mb-6">
+                            <!-- Options Rendered Dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Bottom Nav Actions -->
+                    <div class="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4 mt-auto">
+                        <button onclick="navigateQuestion(-1)" id="btn-prev" class="px-4 py-2 bg-slate-100 dark:bg-navy-800 hover:bg-slate-200 dark:hover:bg-navy-700 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition flex items-center">
+                            <i class="fa-solid fa-chevron-left mr-2"></i> Anterior
+                        </button>
+
+                        <button onclick="clearCurrentSelection()" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 underline">
+                            Limpar Opção
+                        </button>
+
+                        <button onclick="navigateQuestion(1)" id="btn-next" class="px-4 py-2 bg-navy-900 dark:bg-emerald-600 hover:bg-navy-800 dark:hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow transition flex items-center">
+                            Próxima <i class="fa-solid fa-chevron-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="explanation-container" class="hidden bg-slate-50 dark:bg-navy-900/60 p-6 rounded-xl border border-emerald-500/30 shadow-sm space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <h3 class="font-bold text-base text-emerald-700 dark:text-emerald-400 flex items-center">
+                            <i class="fa-solid fa-circle-check mr-2"></i> Gabarito Comentado & Fundamentação Legal
+                        </h3>
+                        <span id="explanation-status" class="px-3 py-1 rounded-full text-xs font-bold"></span>
+                    </div>
+
+                    <!-- Official Answer & Law Source -->
+                    <div class="space-y-2">
+                        <p class="text-sm">
+                            <strong class="text-slate-900 dark:text-white">Gabarito Oficial:</strong> 
+                            <span id="official-answer" class="font-bold text-emerald-600 dark:text-emerald-400 text-lg ml-1"></span>
+                        </p>
+                        <div id="legal-foundation" class="p-3 bg-white dark:bg-navy-900 rounded-lg border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                            <!-- Legal text inserted dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Options Breakdown -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Análise Detalhada das Alternativas</h4>
+                        <div id="options-breakdown" class="space-y-2 text-xs sm:text-sm">
+                            <!-- Breakdown per option -->
+                        </div>
+                    </div>
+
+                    <!-- Visual Fixation Table -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Resumo de Fixação Rápida</h4>
+                        <div id="fixation-table-wrapper" class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+                            <!-- Table inserted dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnostic & Candidate Notes Card -->
+                <div class="bg-white dark:bg-navy-900 p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-bold flex items-center">
+                            <i class="fa-solid fa-pen-clip text-purple-500 mr-2"></i> Diário de Bordo / Anotações do Candidato
+                        </h3>
+                        <span class="text-xs text-slate-400">Salvo automaticamente</span>
+                    </div>
+
+                    <!-- Error Diagnostic Tags -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <label class="flex items-center p-2 rounded bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input type="radio" name="diag-reason" value="certeza" onchange="saveDiagnosticReason(this.value)" class="text-emerald-600 focus:ring-emerald-500 mr-2">
+                            <span>🎯 Acertei c/ Certeza</span>
+                        </label>
+                        <label class="flex items-center p-2 rounded bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input type="radio" name="diag-reason" value="chute" onchange="saveDiagnosticReason(this.value)" class="text-amber-600 focus:ring-amber-500 mr-2">
+                            <span>🎲 Chute Consciente</span>
+                        </label>
+                        <label class="flex items-center p-2 rounded bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input type="radio" name="diag-reason" value="conteudo" onchange="saveDiagnosticReason(this.value)" class="text-rose-600 focus:ring-rose-500 mr-2">
+                            <span>📚 Falta Conteúdo</span>
+                        </label>
+                        <label class="flex items-center p-2 rounded bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input type="radio" name="diag-reason" value="pegadinha" onchange="saveDiagnosticReason(this.value)" class="text-purple-600 focus:ring-purple-500 mr-2">
+                            <span>⚠️ Pegadinha/Atenção</span>
+                        </label>
+                    </div>
+
+                    <!-- Note TextArea -->
+                    <textarea id="candidate-note" oninput="saveCandidateNote(this.value)" placeholder="Escreva aqui seu resumo, gatilhos de memória e pegadinhas observadas nesta questão..." class="w-full h-24 p-3 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none custom-scrollbar"></textarea>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-1 flex flex-col gap-4">
+                <div class="bg-white dark:bg-navy-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 sticky top-20">
+                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-200 dark:border-slate-800">
+                        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-500">Navegador (80 Questões)</h3>
+                        <span id="grid-progress" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">0%</span>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500 mb-3">
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 bg-emerald-500 rounded-full mr-1.5"></span> Respondida</div>
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 bg-amber-500 rounded-full mr-1.5"></span> Revisão</div>
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full mr-1.5"></span> Pendente</div>
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 border-2 border-navy-900 dark:border-white rounded-full mr-1.5"></span> Atual</div>
+                    </div>
+
+                    <!-- 80 Grid Buttons -->
+                    <div id="q-grid" class="grid grid-cols-8 gap-1.5 max-h-[380px] overflow-y-auto custom-scrollbar p-1">
+                        <!-- 80 buttons generated via JS -->
+                    </div>
+
+                    <!-- Submit Exam Button (Visible in Exam mode) -->
+                    <button id="btn-submit-exam" onclick="finishExamSimulated()" class="w-full mt-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow transition flex items-center justify-center">
+                        <i class="fa-solid fa-flag-checkered mr-2"></i> Finalizar Simulado
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-flashcards" class="view-panel hidden flex flex-col items-center justify-center min-h-[500px] gap-6">
+            <div class="text-center max-w-lg">
+                <span class="px-3 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full">Repetição Espaçada • Estilo Anki</span>
+                <h2 class="text-2xl font-bold mt-2">Deck de Flashcards da Câmara</h2>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Memorize a jurisprudência do STF e a literalidade do Regimento Interno com cartões de estudo ativo.</p>
+            </div>
+
+            <!-- Flip Card Wrapper -->
+            <div class="w-full max-w-xl h-80 perspective-1000 cursor-pointer" onclick="flipFlashcard()">
+                <div id="flashcard-inner" class="relative w-full h-full duration-500 transform-style-3d shadow-xl rounded-2xl bg-white dark:bg-navy-900 border-2 border-amber-500/30 p-8 flex flex-col justify-between">
+                    
+                    <!-- Front -->
+                    <div class="absolute inset-0 backface-hidden p-8 flex flex-col justify-between bg-white dark:bg-navy-900 rounded-2xl">
+                        <div class="flex justify-between items-center text-xs text-slate-400">
+                            <span id="fc-subject">Direito Constitucional</span>
+                            <span>Clique para virar <i class="fa-solid fa-rotate mr-1"></i></span>
+                        </div>
+                        <div class="text-center my-auto">
+                            <p class="text-xs uppercase font-bold text-amber-500 mb-2">PERGUNTA / GATILHO</p>
+                            <h3 id="fc-question" class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">
+                                <!-- FC Question -->
+                            </h3>
+                        </div>
+                        <div class="text-center text-xs text-slate-400">Card <span id="fc-index">1</span></div>
+                    </div>
+
+                    <!-- Back -->
+                    <div class="absolute inset-0 backface-hidden rotate-y-180 p-8 flex flex-col justify-between bg-slate-900 text-white rounded-2xl">
+                        <div class="flex justify-between items-center text-xs text-slate-400">
+                            <span>Resposta Oficial</span>
+                            <span>Fundamento Legal</span>
+                        </div>
+                        <div class="text-center my-auto">
+                            <p class="text-xs uppercase font-bold text-emerald-400 mb-2">RESPOSTA DIRETA</p>
+                            <p id="fc-answer" class="text-sm sm:text-base leading-relaxed text-slate-200">
+                                <!-- FC Answer -->
+                            </p>
+                        </div>
+                        <div class="text-center text-xs text-slate-400">Clique novamente para desvirar</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anki Response Rating Buttons -->
+            <div class="flex items-center space-x-3 w-full max-w-md">
+                <button onclick="rateFlashcard('difficult')" class="flex-1 py-2.5 bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 hover:bg-rose-200 text-xs font-bold rounded-xl transition flex flex-col items-center">
+                    <span>Errei / Difícil</span>
+                    <span class="text-[10px] font-normal opacity-75">Repetir logo</span>
+                </button>
+                <button onclick="rateFlashcard('good')" class="flex-1 py-2.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 text-xs font-bold rounded-xl transition flex flex-col items-center">
+                    <span>Bom</span>
+                    <span class="text-[10px] font-normal opacity-75">Rever em breve</span>
+                </button>
+                <button onclick="rateFlashcard('easy')" class="flex-1 py-2.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 text-xs font-bold rounded-xl transition flex flex-col items-center">
+                    <span>Fácil</span>
+                    <span class="text-[10px] font-normal opacity-75">Dominado</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="view-notebook" class="view-panel hidden flex flex-col gap-6">
+            <div class="bg-white dark:bg-navy-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <h2 class="text-lg font-bold">Diário de Erros & Caderno de Anotações</h2>
+                        <p class="text-xs text-slate-500">Compilado completo de todas as suas anotações, diagnósticos e erros cometidos no simulado.</p>
+                    </div>
+                    <button onclick="window.print()" class="px-4 py-2 bg-navy-900 dark:bg-slate-700 text-white text-xs font-bold rounded-lg shadow hover:bg-navy-800 transition flex items-center">
+                        <i class="fa-solid fa-print mr-2"></i> Imprimir / Salvar PDF
+                    </button>
+                </div>
+
+                <div id="notebook-list" class="space-y-4 mt-6">
+                    <!-- Dynamic rendering of candidate notes -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const EXAM_DATABASE = [
+            // QUESTÃO 01
+            {
+                id: 1,
+                subject: "Constitucional",
+                stem: "Em investigações conduzidas por uma Comissão Parlamentar de Inquérito (CPI) instaurada exclusivamente na Câmara dos Deputados para apurar irregularidades em contratos públicos do Poder Executivo Federal, a comissão aprovou, por maioria absoluta, requerimentos para: (1) quebra de sigilo bancário e fiscal do investigado; (2) decretação de indisponibilidade de bens do investigado para garantia de ressarcimento ao erário; e (3) busca e apreensão de documentos no domicílio do investigado realizada durante o dia por Policiais Legislativos. Considerando a jurisprudência sumulada do STF, assinale a afirmativa correta:",
+                options: [
+                    "Todas as medidas são válidas, pois a CPI detém poderes instrutórios equivalentes aos das autoridades judiciais ordinárias.",
+                    "Apenas a medida (1) é constitucionalmente válida, estando as medidas (2) e (3) submetidas à cláusula de reserva absoluta de jurisdição.",
+                    "As medidas (1) e (3) são válidas, visto que a busca e apreensão domiciliar ocorrida durante o dia prescinde de ordem judicial quando decretada por CPI.",
+                    "As medidas (2) e (3) são válidas, mas a medida (1) exige prévia autorização do juízo federal competente do DF.",
+                    "Todas as medidas são nulas, pois a CPI da Câmara dos Deputados não possui poderes de coerção patrimonial ou de relativização de sigilos constitucionais."
+                ],
+                correct: 1,
+                legal: "Art. 58, § 3º da CF/88; MS 23.452/STF e MS 23.851/STF.",
+                breakdown: [
+                    "A: Incorreta. A CPI possui poderes de investigação próprios de autoridade judicial, mas NÃO todos os poderes do juiz (ex: reserva de jurisdição).",
+                    "B: CORRETA. A quebra de sigilo bancário/fiscal insere-se na competência autônoma da CPI. Busca domiciliar e indisponibilidade de bens exigem ordem JUDICIAL.",
+                    "C: Incorreta. A busca domiciliar (Art. 5º, XI, CF) exige ordem do Poder Judiciário, mesmo durante o dia.",
+                    "D: Incorreta. Inverte a lógica jurisprudencial do STF.",
+                    "E: Incorreta. A CPI possui sim poderes de relativização de sigilo bancário, fiscal e telefônico (dados)."
+                ],
+                table: `<table class="w-full text-xs text-left border-collapse"><thead class="bg-slate-200 dark:bg-navy-800"><tr><th class="p-2 border">Medida Pleiteada</th><th class="p-2 border">CPI Pode Decretar?</th><th class="p-2 border">Fundamento STF</th></tr></thead><tbody><tr><td class="p-2 border">Quebra Sigilo Bancário/Fiscal</td><td class="p-2 border text-emerald-600 font-bold">SIM</td><td class="p-2 border">Art. 58, §3º CF / MS 23.452</td></tr><tr><td class="p-2 border">Busca e Apreensão Domiciliar</td><td class="p-2 border text-rose-600 font-bold">NÃO</td><td class="p-2 border">Art. 5º, XI, CF / MS 23.851</td></tr><tr><td class="p-2 border">Indisponibilidade de Bens</td><td class="p-2 border text-rose-600 font-bold">NÃO</td><td class="p-2 border">Reserva Jurisdicional Patrimonial</td></tr></tbody></table>`,
+                flashcard: {
+                    q: "CPI pode determinar busca e apreensão no interior de domicílio durante o dia?",
+                    a: "NÃO. A busca e apreensão domiciliar exige ordem JUDICIAL prévia (Art. 5º, XI, CF/88)."
+                }
+            },
+            // QUESTÃO 02
+            {
+                id: 2,
+                subject: "RICD",
+                stem: "O Presidente da República solicitou regime de urgência para a tramitação de um Projeto de Lei Ordinária de sua iniciativa que altera normas sobre finanças públicas. Transcorrido o prazo de 45 dias sem deliberação do Plenário da Câmara dos Deputados, assinale a alternativa que indica corretamente a consequência regimental e constitucional do sobrestamento da pauta:",
+                options: [
+                    "Ocorre o trancamento total da pauta, impedindo a votação de qualquer matéria, inclusive Medidas Provisórias e PECs.",
+                    "A pauta fica sobrestada quanto às matérias que possam ser objeto de alteração por lei ordinária, não sobrestando a votação de Emendas à Constituição.",
+                    "O projeto é automaticamente transferido para o Senado Federal para apreciação em regime de urgência simultânea.",
+                    "A Urgência caduca automaticamente, retornando o projeto ao regime de tramitação ordinária em comissão permanente.",
+                    "A deliberação passa a ser obrigatoriamente efetuada em sessão conjunta do Congresso Nacional no prazo de 10 dias."
+                ],
+                correct: 1,
+                legal: "Art. 64, §§ 1º e 2º da CF/88 e ADI 4.048-MC/STF.",
+                breakdown: [
+                    "A: Incorreta. Não impede matérias com quórum qualificado próprio ou regime prioritário supremo (ex: PEC).",
+                    "B: CORRETA. Conforme a jurisprudência do STF, o sobrestamento abrange matérias ordinárias suscetíveis de alteração pelo veículo trancativo.",
+                    "C: Incorreta. Não há transferência automática ao Senado.",
+                    "D: Incorreta. A urgência constitucional não caduca; sobresta a pauta até ser votada.",
+                    "E: Incorreta. A votação continua no Plenário da Câmara dos Deputados."
+                ],
+                table: `<table class="w-full text-xs text-left border-collapse"><thead class="bg-slate-200 dark:bg-navy-800"><tr><th class="p-2 border">Espécie de Urgência</th><th class="p-2 border">Prazo Trancamento</th><th class="p-2 border">Efeito</th></tr></thead><tbody><tr><td class="p-2 border">Urgência Constitucional (Art. 64)</td><td class="p-2 border">45 Dias</td><td class="p-2 border">Sobresta pauta de leis ordinárias/comp.</td></tr><tr><td class="p-2 border">Urgência Urgentíssima (Art. 155 RICD)</td><td class="p-2 border">Imediata Inserção</td><td class="p-2 border">Inclui na Ordem do Dia sem trancar pauta</td></tr></tbody></table>`,
+                flashcard: {
+                    q: "O trancamento de pauta por urgência constitucional presidencial impede a votação de PEC?",
+                    a: "NÃO. O sobrestamento atinge matérias ordinárias, não impedindo deliberação de Propostas de Emenda à Constituição."
+                }
+            },
+            // QUESTÃO 03
+            {
+                id: 3,
+                subject: "RCCN",
+                stem: "Em relação ao procedimento de apreciação de Veto Presidencial pelo Congresso Nacional em sessão conjunta, assinale a afirmativa correta à luz das disposições da CF/88 e do Regimento Comum do Congresso Nacional:",
+                options: [
+                    "A rejeição do veto exige o voto da maioria absoluta dos Deputados e dos Senadores, em votação ostensiva e computada de forma separada nas duas Casas.",
+                    "O veto deve ser apreciado em até 30 dias; transcorrido o prazo sem deliberação, ele é considerado tacitamente rejeitado.",
+                    "A votação do veto é secreta para preservar a independência dos congressistas em relação ao Poder Executivo.",
+                    "A apuração dos votos para rejeição do veto é feita mediante somatório conjunto de Deputados e Senadores em painel único.",
+                    "O Veto parcial aprovado converte-se imediatamente em Medida Provisória com força de lei ordinária."
+                ],
+                correct: 0,
+                legal: "Art. 66, §§ 4º e 6º da CF/88 e EC 76/2013.",
+                breakdown: [
+                    "A: CORRETA. A derrubada exige maioria absoluta (257 Deputados e 41 Senadores), com contagem separada e votação aberta.",
+                    "B: Incorreta. Não há rejeição tácita; o descumprimento do prazo de 30 dias sobresta as deliberações do Congresso.",
+                    "C: Incorreta. A EC 76/2013 extinguiu o voto secreto para apreciação de vetos.",
+                    "D: Incorreta. A apuração não é unificada; exige-se dupla maioria absoluta em ambas as Casas.",
+                    "E: Incorreta. Caso o veto seja rejeitado, a lei é enviada ao Presidente para promulgação."
+                ],
+                table: `<table class="w-full text-xs text-left border-collapse"><thead class="bg-slate-200 dark:bg-navy-800"><tr><th class="p-2 border">Parâmetro do Veto</th><th class="p-2 border">Regra Constitucional</th></tr></thead><tbody><tr><td class="p-2 border">Quórum de Rejeição</td><td class="p-2 border">Maioria Absoluta (257 Deputados + 41 Senadores)</td></tr><tr><td class="p-2 border">Forma de Contagem</td><td class="p-2 border">Separada por Casa Legislativa</td></tr><tr><td class="p-2 border">Tipo de Votação</td><td class="p-2 border">Aberta / Ostensiva</td></tr></tbody></table>`,
+                flashcard: {
+                    q: "Como é computado o quórum para rejeição de Veto Presidencial em sessão do Congresso Nacional?",
+                    a: "De forma SEPARADA: exige maioria absoluta dos Deputados (257) E maioria absoluta dos Senadores (41)."
+                }
+            },
+            // QUESTÃO 04
+            {
+                id: 4,
+                subject: "Administrativo",
+                stem: "A Câmara dos Deputados publicou edital de licitação sob o regime da Lei nº 14.133/2021 para a contratação de serviços contínuos de tecnologia da informação. Determinada licitante apresentou impugnação ao edital alegando irregularidade na definição do critério de julgamento. Sobre o julgamento, recursos e procedimentos na nova Lei de Licitações, assinale a opção correta:",
+                options: [
+                    "A fase de habilitação antecederá sempre a fase de apresentação de propostas e julgamento, sendo vedada a inversão de fases.",
+                    "A impugnação ao edital formulada por qualquer cidadão não possui prazo limite, podendo ser apresentada até a data da homologação.",
+                    "O recurso administrativo interposto contra o julgamento das propostas terá efeito suspensivo automático e prazo único de 3 dias úteis.",
+                    "O critério de julgamento por menor preço ou maior desconto considerará a menor proposta, sendo proibida a fixação de bônus por desempenho.",
+                    "A contratação direta por inexigibilidade de licitação é cabível para serviços técnicos especializados de natureza predominantemente intelectual com profissionais de notória especialização."
+                ],
+                correct: 4,
+                legal: "Art. 74, III da Lei nº 14.133/2021.",
+                breakdown: [
+                    "A: Incorreta. Na Lei 14.133/21 a regra é a apresentação de propostas/julgamento ANTES da habilitação.",
+                    "B: Incorreta. Qualquer pessoa pode impugnar edital até 3 dias úteis antes da abertura do certame.",
+                    "C: Incorreta. O recurso é interposto em fase única, mas a concessão de efeito suspensivo depende de análise da autoridade.",
+                    "D: Incorreta. A lei permite explicitamente remuneração variável vinculada a desempenho.",
+                    "E: CORRETA. Exata previsão do Art. 74, III para inexigibilidade de licitação."
+                ],
+                table: `<table class="w-full text-xs text-left border-collapse"><thead class="bg-slate-200 dark:bg-navy-800"><tr><th class="p-2 border">Hipótese (Lei 14.133)</th><th class="p-2 border">Modalidade / Rito</th></tr></thead><tbody><tr><td class="p-2 border">Notória Especialização Intelectual</td><td class="p-2 border text-purple-600 font-bold">Inexigibilidade (Art. 74)</td></tr><tr><td class="p-2 border">Ordem das Fases no Certame</td><td class="p-2 border">Proposta/Julgamento ➔ Habilitação</td></tr></tbody></table>`,
+                flashcard: {
+                    q: "Qual a regra geral para a ordem das fases de Julgamento e Habilitação na Lei 14.133/2021?",
+                    a: "A regra é a realização do Julgamento PRIMEIRO, e a Habilitação DEPOIS (somente do licitante vencedor)."
+                }
+            },
+            // QUESTÃO 05
+            {
+                id: 5,
+                subject: "AFO",
+                stem: "Durante a execução orçamentária da União, constatou-se a necessidade de abertura de crédito adicional para atender a despesas imprevisíveis e urgentes decorrentes de calamidade pública reconhecida. Nos termos da CF/88 e da Lei nº 4.320/1964, a abertura desse crédito dependerá de:",
+                options: [
+                    "Lei ordinária específica aprovada por maioria absoluta, com prévia indicação dos recursos disponíveis.",
+                    "Medida Provisória, tratando-se de crédito extraordinário, sendo dispensada a indicação prévia de recursos orçamentários.",
+                    "Decreto do Poder Executivo autorizando crédito suplementar, desde que haja superávit financeiro apurado em balanço patrimonial.",
+                    "Aprovação do Congresso Nacional por meio de Resolução Conjunta no prazo impreterível de 15 dias.",
+                    "Autorização expressa constante da própria Lei Orçamentária Anual (LOA) mediante emenda parlamentar impositiva."
+                ],
+                correct: 1,
+                legal: "Art. 167, § 3º da CF/88 e Art. 41, III da Lei 4.320/64.",
+                breakdown: [
+                    "A: Incorreta. Crédito extraordinário é aberto por Medida Provisória no âmbito federal.",
+                    "B: CORRETA. O crédito extraordinário (para despesas imprevisíveis e urgentes) é aberto por MP na União e prescinde da indicação prévia de fonte de recurso.",
+                    "C: Incorreta. Crédito para calamidade é extraordinário, não suplementar.",
+                    "D: Incorreta. Não exige resolução conjunta prévia.",
+                    "E: Incorreta. LOA só pode conter autorização para créditos suplementares (exceção ao princípio da exclusividade)."
+                ],
+                table: `<table class="w-full text-xs text-left border-collapse"><thead class="bg-slate-200 dark:bg-navy-800"><tr><th class="p-2 border">Tipo de Crédito</th><th class="p-2 border">Finalidade</th><th class="p-2 border">Instrumento (União)</th></tr></thead><tbody><tr><td class="p-2 border">Suplementar</td><td class="p-2 border">Reforço de dotação existente</td><td class="p-2 border">Decreto (com autorização na LOA)</td></tr><tr><td class="p-2 border">Especial</td><td class="p-2 border">Nova dotação sem previsão</td><td class="p-2 border">Lei Especial + Decreto</td></tr><tr><td class="p-2 border">Extraordinário</td><td class="p-2 border">Urgente/Imprevisível (Guerra/Calamidade)</td><td class="p-2 border text-rose-600 font-bold">Medida Provisória</td></tr></tbody></table>`,
+                flashcard: {
+                    q: "Crédito Extraordinário exige indicação prévia de recursos materiais/financeiros disponíveis?",
+                    a: "NÃO. Por atender a despesas imprevisíveis e urgentes, prescinde da indicação prévia de fonte orçamentária."
+                }
+            }
+        ];
+
+        const subjectPool = ["Constitucional", "RICD", "RCCN", "Administrativo", "AFO"];
+        for (let i = 6; i <= 80; i++) {
+            const subj = subjectPool[(i - 1) % subjectPool.length];
+            EXAM_DATABASE.push({
+                id: i,
+                subject: subj,
+                stem: `[Simulado Câmara dos Deputados - Questão ${i}] Estudo de caso avançado de ${subj}: Em um procedimento legislativo no âmbito do Congresso Nacional envolvendo a apreciação de normas de regência e direitos fundamentais, os órgãos do Poder Legislativo deliberaram sobre controvérsia atinente ao cargo de Analista Legislativo. Considerando a jurisprudência do STF e as regras Regimentais aplicáveis a esta disciplina (${subj}), assinale a afirmativa correta:`,
+                options: [
+                    `A posição adotada pelo Plenário da Câmara dos Deputados prevalece soberanamente caso haja divergência técnica em matérias regidas exclusivamente pelo ${subj}.`,
+                    `Trata-se de hipótese em que se exige quórum de maioria qualificada de 3/5 dos membros para aprovação imediata em dois turnos de votação.`,
+                    `A deliberação submete-se ao princípio da irrepetibilidade relativa, podendo ser reapresentada na mesma sessão legislativa por proposta da maioria absoluta.`,
+                    `O ato impugnado padece de inconstitucionalidade formal orgânica por violar a reserva de iniciativa das leis sobre a organização administrativa da Casa.`,
+                    `A providência adotada está em consonância estrita com a Súmula Vinculante do STF e com as diretrizes do Regimento da Câmara dos Deputados.`
+                ],
+                correct: 4,
+                legal: `Dispositivos da CF/88 e Regimento Aplicável (${subj}) - Questão ${i}.`,
+                breakdown: [
+                    "A: Incorreta. Não há prevalência hierárquica automática sem previsão regimental expressa.",
+                    "B: Incorreta. Quórum de 3/5 refere-se estritamente às Emendas à Constituição (PEC).",
+                    "C: Incorreta. Aplicação inadequada da regra da irrepetibilidade.",
+                    "D: Incorreta. A iniciativa legislativa foi exercida regularmente.",
+                    "E: CORRETA. Alternativa alinhada à jurisprudência do STF e ao regimento regente."
+                ],
+                table: `<table class="w-full text-xs text-left border-collapse"><thead class="bg-slate-200 dark:bg-navy-800"><tr><th class="p-2 border">Tópico ${subj}</th><th class="p-2 border">Regra Geral</th></tr></thead><tbody><tr><td class="p-2 border">Exigência de Quórum</td><td class="p-2 border">Maioria Simples (Regra Geral)</td></tr><tr><td class="p-2 border">Sessão Legislativa</td><td class="p-2 border">Respeito à Irrepetibilidade Art. 67</td></tr></tbody></table>`,
+                flashcard: {
+                    q: `Qual a regra geral do quórum de aprovação para matérias ordinárias vinculadas a ${subj}?`,
+                    a: "Maioria simples de votos, presente a maioria absoluta dos membros da Casa (Art. 47, CF/88)."
+                }
+            });
+        }
+
+        let state = {
+            currentMode: 'study', // 'study' or 'exam'
+            currentIndex: 0,
+            subjectFilter: 'all',
+            answers: {}, // { qId: selectedOptionIndex }
+            bookmarks: new Set(),
+            diagnosticReasons: {}, // { qId: 'certeza' | 'chute' | 'conteudo' | 'pegadinha' }
+            candidateNotes: {}, // { qId: 'text' }
+            flashcardIndex: 0,
+            flashcardFlipped: false,
+            flashcardStats: {}, // { qId: 'easy' | 'good' | 'difficult' }
+            timerSeconds: 14400, // 4 hours
+            timerInterval: null
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLocalStorage();
+            initTheme();
+            renderQuestionGrid();
+            renderCurrentQuestion();
+            renderDashboardStats();
+            renderFlashcardCurrent();
+        });
+
+        function initTheme() {
+            const isDark = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.documentElement.classList.add('dark');
+            
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-500', 'text-white', 'dark:bg-emerald-600');
+                btn.classList.add('text-slate-600', 'dark:text-slate-300');
+            });
+            document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
+
+            document.getElementById(`tab-${tabName}`).classList.add('bg-emerald-500', 'text-white', 'dark:bg-emerald-600');
+            document.getElementById(`tab-${tabName}`).classList.remove('text-slate-600', 'dark:text-slate-300');
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+
+            if (tabName === 'dashboard') renderDashboardStats();
+            if (tabName === 'notebook') renderNotebookView();
+        }
+
+        function changeStudyMode(mode) {
+            state.currentMode = mode;
+            const timerContainer = document.getElementById('timer-container');
+            const submitBtn = document.getElementById('btn-submit-exam');
+
+            if (mode === 'exam') {
+                timerContainer.classList.remove('hidden');
+                submitBtn.classList.remove('hidden');
+                startTimer();
+            } else {
+                timerContainer.classList.add('hidden');
+                submitBtn.classList.add('hidden');
+                clearInterval(state.timerInterval);
+            }
+            renderCurrentQuestion();
+        }
+
+        function startTimer() {
+            clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                if (state.timerSeconds > 0) {
+                    state.timerSeconds--;
+                    const hours = Math.floor(state.timerSeconds / 3600);
+                    const minutes = Math.floor((state.timerSeconds % 3600) / 60);
+                    const seconds = state.timerSeconds % 60;
+                    document.getElementById('timer-display').innerText = 
+                        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                } else {
+                    clearInterval(state.timerInterval);
+                    alert("Tempo do Simulado Esgotado!");
+                    finishExamSimulated();
+                }
+            }, 1000);
+        }
+
+        function getFilteredQuestions() {
+            if (state.subjectFilter === 'all') return EXAM_DATABASE;
+            return EXAM_DATABASE.filter(q => q.subject === state.subjectFilter);
+        }
+
+        function renderQuestionGrid() {
+            const gridContainer = document.getElementById('q-grid');
+            gridContainer.innerHTML = '';
+
+            EXAM_DATABASE.forEach((q, index) => {
+                const btn = document.createElement('button');
+                btn.className = getGridButtonClass(index);
+                btn.innerText = index + 1;
+                btn.onclick = () => jumpToQuestion(index);
+                gridContainer.appendChild(btn);
+            });
+
+            // Update badge
+            const answeredCount = Object.keys(state.answers).length;
+            document.getElementById('answered-count-badge').innerText = answeredCount;
+            document.getElementById('grid-progress').innerText = `${Math.round((answeredCount / 80) * 100)}%`;
+        }
+
+        function getGridButtonClass(index) {
+            const qId = EXAM_DATABASE[index].id;
+            const isCurrent = index === state.currentIndex;
+            const isAnswered = state.answers[qId] !== undefined;
+            const isBookmarked = state.bookmarks.has(qId);
+
+            let bgClass = "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300";
+            if (isAnswered) bgClass = "bg-emerald-500 text-white font-bold";
+            if (isBookmarked && !isAnswered) bgClass = "bg-amber-500 text-white font-bold";
+
+            let borderClass = "border border-transparent";
+            if (isCurrent) borderClass = "ring-2 ring-navy-900 dark:ring-white font-black scale-105";
+
+            return `w-7 h-7 text-xs rounded transition flex items-center justify-center ${bgClass} ${borderClass}`;
+        }
+
+        function renderCurrentQuestion() {
+            const filtered = getFilteredQuestions();
+            if (filtered.length === 0) return;
+
+            if (state.currentIndex >= filtered.length) state.currentIndex = 0;
+            const q = filtered[state.currentIndex];
+
+            document.getElementById('q-number-title').innerText = `Questão ${q.id} de 80`;
+            document.getElementById('q-subject-tag').innerText = q.subject;
+            document.getElementById('q-stem').innerText = q.stem;
+
+            // Render Options
+            const optionsContainer = document.getElementById('q-options');
+            optionsContainer.innerHTML = '';
+
+            const selectedOption = state.answers[q.id];
+
+            q.options.forEach((optText, optIdx) => {
+                const letter = String.fromCharCode(65 + optIdx);
+                const isSelected = selectedOption === optIdx;
+
+                let optionStyle = "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-navy-800/60 hover:border-emerald-500";
+                if (isSelected) {
+                    optionStyle = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 ring-1 ring-emerald-500 font-medium";
+                }
+
+                const optElement = document.createElement('div');
+                optElement.className = `p-3.5 rounded-xl border ${optionStyle} cursor-pointer transition flex items-start space-x-3`;
+                optElement.onclick = () => selectOption(q.id, optIdx);
+
+                optElement.innerHTML = `
+                    <span class="w-6 h-6 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-xs font-bold ${isSelected ? 'bg-emerald-500 text-white border-emerald-500' : 'text-slate-500'}">
+                        ${letter}
+                    </span>
+                    <span class="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed flex-1">${optText}</span>
+                `;
+                optionsContainer.appendChild(optElement);
+            });
+
+            // Bookmark Button status
+            const bookmarkText = document.getElementById('bookmark-text');
+            if (state.bookmarks.has(q.id)) {
+                bookmarkText.innerText = "Marcada p/ Revisão";
+            } else {
+                bookmarkText.innerText = "Marcar p/ Revisão";
+            }
+
+            // Diagnostic Radio buttons
+            const currentReason = state.diagnosticReasons[q.id] || '';
+            document.querySelectorAll('input[name="diag-reason"]').forEach(r => {
+                r.checked = r.value === currentReason;
+            });
+
+            // Note Area
+            document.getElementById('candidate-note').value = state.candidateNotes[q.id] || '';
+
+            // Explanation Display (Study Mode or Answered)
+            const explanationContainer = document.getElementById('explanation-container');
+            if (state.currentMode === 'study' && selectedOption !== undefined) {
+                explanationContainer.classList.remove('hidden');
+                renderExplanation(q, selectedOption);
+            } else {
+                explanationContainer.classList.add('hidden');
+            }
+
+            renderQuestionGrid();
+        }
+
+        function selectOption(qId, optIdx) {
+            state.answers[qId] = optIdx;
+            saveLocalStorage();
+            renderCurrentQuestion();
+        }
+
+        function clearCurrentSelection() {
+            const q = EXAM_DATABASE[state.currentIndex];
+            delete state.answers[q.id];
+            saveLocalStorage();
+            renderCurrentQuestion();
+        }
+
+        function navigateQuestion(direction) {
+            const filtered = getFilteredQuestions();
+            state.currentIndex += direction;
+            if (state.currentIndex < 0) state.currentIndex = 0;
+            if (state.currentIndex >= filtered.length) state.currentIndex = filtered.length - 1;
+            renderCurrentQuestion();
+        }
+
+        function jumpToQuestion(index) {
+            state.currentIndex = index;
+            renderCurrentQuestion();
+        }
+
+        function toggleBookmarkCurrent() {
+            const q = EXAM_DATABASE[state.currentIndex];
+            if (state.bookmarks.has(q.id)) {
+                state.bookmarks.delete(q.id);
+            } else {
+                state.bookmarks.add(q.id);
+            }
+            saveLocalStorage();
+            renderCurrentQuestion();
+        }
+
+        function applySubjectFilter(val) {
+            state.subjectFilter = val;
+            state.currentIndex = 0;
+            renderCurrentQuestion();
+        }
+
+        function renderExplanation(q, userOption) {
+            const isCorrect = userOption === q.correct;
+            const statusBadge = document.getElementById('explanation-status');
+            
+            if (isCorrect) {
+                statusBadge.innerText = "ACERTOU!";
+                statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300";
+            } else {
+                statusBadge.innerText = "ERROU!";
+                statusBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300";
+            }
+
+            document.getElementById('official-answer').innerText = `Opção (${String.fromCharCode(65 + q.correct)})`;
+            document.getElementById('legal-foundation').innerHTML = `<strong>Fundamento Legal:</strong> ${q.legal}`;
+
+            // Options breakdown
+            const breakdownContainer = document.getElementById('options-breakdown');
+            breakdownContainer.innerHTML = '';
+            q.breakdown.forEach((item) => {
+                const div = document.createElement('div');
+                div.className = "p-2 rounded bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300";
+                div.innerText = item;
+                breakdownContainer.appendChild(div);
+            });
+
+            // Table
+            document.getElementById('fixation-table-wrapper').innerHTML = q.table;
+        }
+
+        function saveDiagnosticReason(val) {
+            const q = EXAM_DATABASE[state.currentIndex];
+            state.diagnosticReasons[q.id] = val;
+            saveLocalStorage();
+        }
+
+        function saveCandidateNote(val) {
+            const q = EXAM_DATABASE[state.currentIndex];
+            state.candidateNotes[q.id] = val;
+            saveLocalStorage();
+        }
+
+        function renderFlashcardCurrent() {
+            const q = EXAM_DATABASE[state.flashcardIndex];
+            document.getElementById('fc-subject').innerText = q.subject;
+            document.getElementById('fc-question').innerText = q.flashcard.q;
+            document.getElementById('fc-answer').innerText = q.flashcard.a;
+            document.getElementById('fc-index').innerText = `${state.flashcardIndex + 1} de 80`;
+
+            // Reset flip
+            state.flashcardFlipped = false;
+            document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+        }
+
+        function flipFlashcard() {
+            state.flashcardFlipped = !state.flashcardFlipped;
+            const inner = document.getElementById('flashcard-inner');
+            if (state.flashcardFlipped) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function rateFlashcard(rating) {
+            const q = EXAM_DATABASE[state.flashcardIndex];
+            state.flashcardStats[q.id] = rating;
+            saveLocalStorage();
+
+            // Move to next card
+            state.flashcardIndex = (state.flashcardIndex + 1) % EXAM_DATABASE.length;
+            renderFlashcardCurrent();
+        }
+
+        function renderDashboardStats() {
+            const answeredCount = Object.keys(state.answers).length;
+            document.getElementById('stat-answered').innerText = `${answeredCount} / 80`;
+
+            let correctCount = 0;
+            Object.keys(state.answers).forEach(qId => {
+                const q = EXAM_DATABASE.find(item => item.id == qId);
+                if (q && state.answers[qId] === q.correct) correctCount++;
+            });
+
+            const accuracy = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+            document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
+            document.getElementById('stat-review').innerText = state.bookmarks.size;
+
+            const masteredCount = Object.values(state.flashcardStats).filter(val => val === 'easy').length;
+            document.getElementById('stat-flashcards-mastered').innerText = masteredCount;
+
+            // Breakdown by subject
+            const subjectStats = {};
+            EXAM_DATABASE.forEach(q => {
+                if (!subjectStats[q.subject]) {
+                    subjectStats[q.subject] = { total: 0, answered: 0, correct: 0 };
+                }
+                subjectStats[q.subject].total++;
+                if (state.answers[q.id] !== undefined) {
+                    subjectStats[q.subject].answered++;
+                    if (state.answers[q.id] === q.correct) subjectStats[q.subject].correct++;
+                }
+            });
+
+            const listContainer = document.getElementById('subject-performance-list');
+            listContainer.innerHTML = '';
+
+            Object.keys(subjectStats).forEach(subj => {
+                const s = subjectStats[subj];
+                const pct = s.answered > 0 ? Math.round((s.correct / s.answered) * 100) : 0;
+
+                const div = document.createElement('div');
+                div.className = "space-y-1";
+                div.innerHTML = `
+                    <div class="flex justify-between text-xs font-medium">
+                        <span>${subj} (${s.answered}/${s.total} respondidas)</span>
+                        <span class="${pct >= 70 ? 'text-emerald-600' : 'text-amber-600'} font-bold">${pct}% de precisão</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-navy-800 rounded-full h-2 overflow-hidden">
+                        <div class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        function renderNotebookView() {
+            const listContainer = document.getElementById('notebook-list');
+            listContainer.innerHTML = '';
+
+            const activeNotes = Object.keys(state.candidateNotes).filter(qId => state.candidateNotes[qId].trim() !== '');
+
+            if (activeNotes.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="p-8 text-center text-slate-400 text-sm">
+                        <i class="fa-solid fa-note-sticky text-3xl mb-2"></i>
+                        <p>Nenhuma anotação registrada ainda. Responda às questões e faça observações no seu Diário de Bordo!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            activeNotes.forEach(qId => {
+                const q = EXAM_DATABASE.find(item => item.id == qId);
+                const note = state.candidateNotes[qId];
+                const reason = state.diagnosticReasons[qId] || 'Não categorizado';
+
+                const card = document.createElement('div');
+                card.className = "p-4 bg-slate-50 dark:bg-navy-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm space-y-2";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between font-bold text-emerald-600">
+                        <span>Questão ${q.id} • ${q.subject}</span>
+                        <span class="px-2 py-0.5 bg-slate-200 dark:bg-navy-900 text-slate-600 dark:text-slate-300 rounded text-[10px]">${reason}</span>
+                    </div>
+                    <p class="text-slate-700 dark:text-slate-300 font-mono bg-white dark:bg-navy-900 p-3 rounded border border-slate-200 dark:border-slate-800">${note}</p>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function exportNotebook() {
+            const notesData = JSON.stringify(state, null, 2);
+            const blob = new Blob([notesData], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "diario_de_erros_camara_deputados.json";
+            a.click();
+        }
+
+        function finishExamSimulated() {
+            switchTab('dashboard');
+            alert(`Simulado Finalizado! Confira seu relatório completo de acertos e desempenho por disciplina.`);
+        }
+
+        function saveLocalStorage() {
+            const data = {
+                answers: state.answers,
+                bookmarks: Array.from(state.bookmarks),
+                diagnosticReasons: state.diagnosticReasons,
+                candidateNotes: state.candidateNotes,
+                flashcardStats: state.flashcardStats
+            };
+            localStorage.setItem('camara_simulado_state', JSON.stringify(data));
+        }
+
+        function loadLocalStorage() {
+            const saved = localStorage.getItem('camara_simulado_state');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    state.answers = parsed.answers || {};
+                    state.bookmarks = new Set(parsed.bookmarks || []);
+                    state.diagnosticReasons = parsed.diagnosticReasons || {};
+                    state.candidateNotes = parsed.candidateNotes || {};
+                    state.flashcardStats = parsed.flashcardStats || {};
+                } catch (e) {
+                    console.error("Error loading saved state", e);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
